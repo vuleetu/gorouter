@@ -4,22 +4,26 @@ package http
 import (
     "yunio/router"
     "net/http"
-    "yunio/http/controller"
 )
 
-func Start(address string) {
-    var h handler
+type Patterns map[string]router.AbstractController
+
+func Start(address string, rule router.Rule, patterns Patterns) {
+    h := handler{rule, patterns}
     http.ListenAndServe(address, h)
 }
 
-type handler int
+type handler struct{
+    rule router.Rule
+    patterns Patterns
+}
 
 func (h handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     entry := router.Entry{
                 R: req,
                 W: w,
-                Rule: router.RegRule{},
-                Controllers: map[string]router.AbstractController{"user": &controller.UserController{}}}
+                Rule: h.rule,
+                Controllers: h.patterns}
     router.Route(entry)
 }
 
