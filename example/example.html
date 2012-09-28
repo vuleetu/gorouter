@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %} {{ title }} {% endblock title %}
+{% block sidebar %}
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/blog/">Files</a></li>
+        </ul>  
+{% endblock sidebar %}
+{% block content %} Hey {{ name|capitalize }}!! {% endblock content %}
