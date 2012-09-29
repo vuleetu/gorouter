@@ -4,6 +4,8 @@ import (
     "yunio/router"
     "yunio/view"
     "fmt"
+    _ "github.com/ziutek/mymysql/godrv"
+    "database/sql"
 )
 
 type UserController struct {
@@ -20,6 +22,23 @@ func (c *UserController) HelloAction() {
 }
 
 func (c *UserController) TemplateAction() {
+    defer db.Close()
+    rows, err1 := db.Query("SELECT path, name FROM user_files LIMIT 10")
+    if err1 != nil {
+        fmt.Fprintf(c.GetW(), "Query failed, error is %s", err1.Error())
+        return
+    }
+
+    for rows.Next() {
+        var path, name string
+        err = rows.Scan(&path, &name)
+        if err != nil {
+            fmt.Fprintf(c.GetW(), "Get rows failed, error is %s", err.Error())
+            return
+        }
+        fmt.Println(path, name)
+    }
+
     tpl := view.NewDjangoTpl(c.GetW())
     tpl.Assign("title", "Yunio")
     tpl.Assign("name", "view based on django")
