@@ -18,3 +18,7 @@ func ModelToColumn(model interface{}) string {
     }
     return buf.String()
 }
+
+func DataToModel([][]byte, model interface{}) {
+    
+}

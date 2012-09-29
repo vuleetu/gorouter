@@ -3,6 +3,7 @@ package model
 import (
     "container/list"
     "database/sql"
+    "fmt"
 )
 
 type User struct {
@@ -13,13 +14,14 @@ type User struct {
 
 type UserModel struct {
     db *sql.DB
+    fields string
 }
 
 type Users *list.List
 
 func (model *UserModel) GetAll(uid int) (Users, error) {
     //db, err := sql.Open("mymysql", "tcp:localhost:3306*yunio2/root/root")
-    rows, err := model.db.Query("SELECT ? FROM user_files LIMIT 10", "*")
+    rows, err := model.db.Query(fmt.Sprintf("SELECT %s FROM user_files", model.fields))
     if err != nil {
         return nil, err
     }
