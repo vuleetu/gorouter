@@ -3,6 +3,7 @@ package model
 import (
     "container/list"
     "database/sql"
+    "yunio/http/util/db"
     "fmt"
 )
 
@@ -14,7 +15,12 @@ type User struct {
 
 type UserModel struct {
     db *sql.DB
-    fields string
+    fields, tbl string
+}
+
+func New(d *sql.DB) *UserModel {
+    fields, tbl := db.ModelToColumn(User{})
+    return &UserModel{d, fields, tbl}
 }
 
 type Users *list.List
