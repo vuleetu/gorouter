@@ -13,10 +13,12 @@ import (
     "yunio/gorouter/model"
 )
 
+//register driver
 func init() {
     model.Register("mysql", &Driver{})
 }
 
+//Driver
 type Driver struct {}
 
 func (drv *Driver) New(obj model.Object, source string) (model.Model, error) {
@@ -36,6 +38,7 @@ func (drv *Driver) New(obj model.Object, source string) (model.Model, error) {
 
     return &Model{tbl, o, d}, nil
 }
+//
 
 type Table struct {
     fields []Field //fileds of table
@@ -170,6 +173,44 @@ func (m *Model) Update() error {
     return nil
 }
 
+func (m *Model) Delete() error {
+    keydatas := make([]interface{}, 0, 10)
+    keycolumns := make([]string, 0, 10)
+    hasKey := false
+    for i := 0; i < len(m.tbl.fields); i++ {
+        if m.tbl.fields[i].Key == "true" {
+            log.Println("is key")
+            hasKey = true
+            keydatas = append(keydatas, m.obj.Value.Field(i).Interface())
+            keycolumns = append(keycolumns, m.tbl.fields[i].Name)
+        }
+    }
+
+    if !hasKey {
+        return errors.New("No key specified")
+    }
+
+    keyColumnStr := ""
+    for _, column := range keycolumns {
+        keyColumnStr += column + "=? AND "
+    }
+    keyColumnStr = keyColumnStr[0:len(keyColumnStr)-5]
+    log.Println(keyColumnStr)
+    sql := fmt.Sprintf("DELETE FROM %s WHERE %s", m.tbl.name, keyColumnStr)
+    log.Println("Sql is", sql)
+    stmt, err := m.conn.Prepare(sql)
+    if err != nil {
+        return err
+    }
+    stmt.Bind(keydatas...)
+    res, err := stmt.Run()
+    if err != nil {
+        return err
+    }
+
+    fmt.Println("Affected rows is ", res.AffectedRows())
+    return nil
+}
 func MakeData(Type reflect.Type, row mysql.Row) model.Data {
     //log.Println(row)
     v := reflect.New(Type).Elem() //Use new to get the pointer

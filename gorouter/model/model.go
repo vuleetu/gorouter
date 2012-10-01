@@ -13,6 +13,7 @@ type Model interface {
     GetAll() (Datas, error)
     Save() error
     Update() error
+    Delete() error
 }
 
 func New(drvname string, obj Object, source string) (Model, error) {
