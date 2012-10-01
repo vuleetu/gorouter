@@ -213,7 +213,8 @@ func (m *Model) Delete() error {
 }
 func MakeData(Type reflect.Type, row mysql.Row) model.Data {
     //log.Println(row)
-    v := reflect.New(Type).Elem() //Use new to get the pointer
+    t := reflect.New(Type)
+    v := t.Elem() //Use new to get the pointer
     log.Println("The type of v is ", v.Type())
     length := v.NumField()
     for i := 0; i < length; i++ {
@@ -249,7 +250,10 @@ func MakeData(Type reflect.Type, row mysql.Row) model.Data {
         }
     }
 
-    return v.Interface()
+    log.Println(v.Type())
+    log.Println(t.Type())
+
+    return t.Interface()
 }
 
 func TableInfo(object interface{}) (*Table, *Object, error) {
