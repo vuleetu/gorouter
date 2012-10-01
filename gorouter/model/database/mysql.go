@@ -1,4 +1,4 @@
-package db
+package model
 
 import (
     "reflect"
@@ -6,10 +6,36 @@ import (
     "fmt"
     "errors"
     "github.com/ziutek/mymysql/mysql"
+    _ "github.com/ziutek/mymysql/native"
     "io"
     "time"
     "log"
+    "yunio/gorouter/model"
 )
+
+func init() {
+    model.Register("mysql", &Driver{})
+}
+
+type Driver struct {}
+
+func (drv *Driver) New(obj model.Object, source string) (model.Model, error) {
+    info := strings.Split(source, ",")
+    d := mysql.New("tcp", "", info[0], info[1], info[2], info[3])
+    err := d.Connect()
+    if err != nil {
+        log.Println(err.Error())
+        return nil, err
+    }
+    tbl, o, err := TableInfo(obj)
+
+    if err != nil {
+        log.Println(err.Error())
+        return nil, err
+    }
+
+    return &Model{tbl, o, d}, nil
+}
 
 type Table struct {
     fields []Field //fileds of table
@@ -33,10 +59,7 @@ type Model struct {
     conn mysql.Conn
 }
 
-type Data interface{}
-type Datas []Data
-
-func (m *Model) GetAll() (Datas, error) {
+func (m *Model) GetAll() (model.Datas, error) {
     fields := make([]string, 0, 10)
     for i := 0; i < len(m.tbl.fields); i++ {
         fields = append(fields, m.tbl.fields[i].Name)
@@ -53,7 +76,7 @@ func (m *Model) GetAll() (Datas, error) {
         return nil, err
     }
 
-    objs := make([]Data, 0, 100) //100 first
+    objs := make([]model.Data, 0, 100) //100 first
     row := res.MakeRow()
     for {
         err = res.ScanRow(row)
@@ -118,14 +141,20 @@ func (m *Model) Update() error {
         }
     }
     log.Println(datas, columns)
-    columnStr := strings.Join(columns, "=?, ")
-    log.Println(columnStr)
+    columnStr := ""
+    for _, column := range columns {
+        columnStr += column + "=?, "
+    }
     columnStr = columnStr[0:len(columnStr)-2]
-    keyColumnStr := strings.Join(keycolumns, "=? AND ")
-    log.Println(keyColumnStr)
+    log.Println(columnStr)
+    keyColumnStr := ""
+    for _, column := range keycolumns {
+        keyColumnStr += column + "=? AND "
+    }
     keyColumnStr = keyColumnStr[0:len(keyColumnStr)-5]
+    log.Println(keyColumnStr)
     sql := fmt.Sprintf("UPDATE %s SET %s WHERE %s", m.tbl.name, columnStr, keyColumnStr)
-    log.Println("Sql is ", sql)
+    log.Println("Sql is", sql)
     stmt, err := m.conn.Prepare(sql)
     if err != nil {
         return err
@@ -141,7 +170,7 @@ func (m *Model) Update() error {
     return nil
 }
 
-func MakeData(Type reflect.Type, row mysql.Row) Data {
+func MakeData(Type reflect.Type, row mysql.Row) model.Data {
     //log.Println(row)
     v := reflect.New(Type).Elem() //Use new to get the pointer
     log.Println("The type of v is ", v.Type())
@@ -180,17 +209,6 @@ func MakeData(Type reflect.Type, row mysql.Row) Data {
     }
 
     return v.Interface()
-}
-
-func NewModel(obj interface{}, conn mysql.Conn) *Model {
-    tbl, o, err := TableInfo(obj)
-
-    if err != nil {
-        log.Println(err.Error())
-        return nil
-    }
-
-    return &Model{tbl, o, conn}
 }
 
 func TableInfo(object interface{}) (*Table, *Object, error) {
