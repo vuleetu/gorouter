@@ -1,11 +1,9 @@
 package controller
 
 import (
-    "yunio/router"
-    "yunio/view"
+    /*"yunio/gorouter"
+    "yunio/view"*/
     "fmt"
-    _ "github.com/ziutek/mymysql/godrv"
-    "database/sql"
 )
 
 type UserController struct {
